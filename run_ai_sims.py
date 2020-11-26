@@ -2,6 +2,8 @@ import jax.numpy as jnp
 import numpy as np
 import itertools
 import argparse
+import os 
+import glob
 
 from collections import defaultdict
 from tqdm import trange
@@ -12,7 +14,7 @@ from learning_algos import learning_stationary as learning
 from environment import generative_process
 
 rho = .0
-log_pj_j = jnp.log(jnp.array([[1 - rho, rho],[1., 0.]]))
+log_pj_j = jnp.log(jnp.array([[1 - rho, rho], [1., 0.]]))
 process = lambda *args: generative_process(*args, log_pj_j)
 
 # simulator for POMDP
@@ -48,15 +50,22 @@ def main(args):
     gammas = jnp.arange(1., 21., 1.)
     lambdas = jnp.arange(.0, 4., .2)
     vals = jnp.array(list(itertools.product(gammas, lambdas)))
+    
+    mean_reg = defaultdict(lambda: [])
     for K in Ks:
-        mean_reg = {}
         for func, label in zip([efe_selection, sup_selection, app_selection], ['EFE_K{}'.format(K), 'SUP_K{}'.format(K), 'APP_K{}'.format(K)]):
             sim = lambda g, l: simulator(process, learning, lambda *args: func(*args, gamma=g, lam=l), N=N, T=T, K=K, eps=eps)
             choices = vmap(sim)(vals[:, 0], vals[:, 1])
             regret = np.cumsum((1 - (choices == 0).astype(jnp.float32)) * eps, -2)[:, ::10]
-            mean_reg[label] = regret/times
+            mean_reg[label].append(regret/times)
+        np.savez('tmp_res_AI_K{}_e{}'.format(K, args.difficulty), **mean_reg)
+    np.savez('res_AI_Ks_e{}'.format(args.difficulty), **mean_reg)
 
-        np.savez('res_AI_K{}_e{}'.format(K, args.difficulty, **mean_reg))
+    # delete tmp files
+    files = glob.glob(os.path.join('tmp_*_e{}.npz'.format(args.difficulty)))
+    for file in files:
+    	os.remove(file)
+
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description="Active inference algos in classical multi-armed bandits")
