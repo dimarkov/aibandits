@@ -19,18 +19,19 @@ def generative_process_swtch(t, choices, states, rng_key, log_pj_j):
     new_probs = jnp.where(new_change, random_probs, probs)
 
     rng_key, _rng_key = random.split(rng_key)
-    outcomes = random.bernoulli(_rng_key, probs, shape=(K,))
+    outcomes = random.bernoulli(_rng_key, probs, shape=(N, K))
 
-    return outcomes[choices], [new_probs, new_change]
+    return outcomes, [new_probs, new_change]
 
 def generative_process_drift(t, choices, states, rng_key, sigma=.01):
     probs, _ = states
+    N = len(choices)
     K = len(probs)
     
     rng_key, _rng_key = random.split(rng_key)
     x = logit(probs) + jnp.sqrt(sigma) * random.normal(_rng_key, shape=(K,))
     
     rng_key, _rng_key = random.split(rng_key)
-    outcomes = random.bernoulli(_rng_key, probs)
+    outcomes = random.bernoulli(_rng_key, probs, shape=(N, K))
     
-    return outcomes[choices], [expit(x), jnp.zeros(K, dtype=jnp.int32)]
+    return outcomes, [expit(x), jnp.zeros(K, dtype=jnp.int32)]
