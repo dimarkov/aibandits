@@ -18,9 +18,9 @@ log_pj_j = jnp.log(jnp.array([[1 - rho, rho], [1., 0.]]))
 process = lambda *args: generative_process_swtch(*args, log_pj_j)
 
 # simulator for POMDP
-def simulator(process, learning, action_selection, N=100, T=1000, K=10, seed=0, eps=.25):
-    def sim_fn(carry, t):
-        rng_key, states, prior = carry
+def simulator(process, learning, action_selection, N=100, T=1000, K=10, seed=0, eps=.25, save_every=100):
+    def loop_fn(t, carry):
+        rng_key, states, prior, cum_reg, cum_epst_reg = carry
 
         rng_key, _rng_key = random.split(rng_key)
         choices = action_selection(t, prior, _rng_key)
@@ -31,27 +31,30 @@ def simulator(process, learning, action_selection, N=100, T=1000, K=10, seed=0, 
 
         sel = jnp.arange(N)
         sel_probs = probs[choices]
-        
+
         alphas = prior[sel, choices, 0]
         betas = prior[sel, choices, 1]
         nu = alphas + betas
         mu = alphas/nu
 
-        KL0 = (1/(1-mu) - 1) / (2 * nu)
-        KL1 = (1/mu - 1) / (2 * nu)
+        nu_min = jnp.min(prior[..., 0] + prior[..., 1], -1)
+        cum_reg += eps + .5 - sel_probs
 
-        regret = eps + .5 - sel_probs
+        cum_epst_reg += (1/nu_min - 1/nu)/2
 
-        info_gain = sel_probs * KL1 + (1 - sel_probs) * KL0
+        return (rng_key, states, posterior, cum_reg, cum_epst_reg)
 
-        return (rng_key, states, posterior), (regret, info_gain)
+    def sim_fn(carry, t):
+        res = lax.fori_loop(t*save_every, (t+1)*save_every, loop_fn, (carry))
+        _, _, _, cum_reg, cum_epst_reg = carry
+        return res, (cum_reg, cum_epst_reg)
 
     rng_key = random.PRNGKey(seed)
     probs = jnp.concatenate([jnp.array([eps + .5]), jnp.ones(K-1)/2.])
     states = [probs, jnp.zeros(1, dtype=jnp.int32)]
     prior = jnp.ones((N, K, 2))
 
-    _, results = lax.scan(sim_fn, (rng_key, states, prior), jnp.arange(T))
+    _, results = lax.scan(sim_fn, (rng_key, states, prior, jnp.zeros(N), jnp.zeros(N)), jnp.arange(T))
 
     return results
 
@@ -79,16 +82,14 @@ def main(args):
     vals = jnp.array(list(itertools.product(gammas, lambdas)))
 
     for K in Ks:
-        regret_rate = defaultdict()
+        regret_all = defaultdict()
         for func, label in zip([efe_selection, sup_selection, app_selection], ['EFE_K{}'.format(K), 'SUP_K{}'.format(K), 'APP_K{}'.format(K)]):
             sim = lambda g, l: simulator(process, learning, lambda *args: func(*args, gamma=g, lam=l), N=N, T=T, K=K, eps=eps)
             results = vmap(sim)(vals[:, 0], vals[:, 1])
-            regret = results[0]
-            info_gain = results[1]
-            cum_regret = np.cumsum(regret.astype(jnp.float32), -2)[:, ::10]
-            cum_ig = np.cumsum(info_gain.astype(jnp.float32), -2)[:, ::10]
-            regret_rate[label] = {'regret': cum_regret, 'epistemics': cum_ig}
-        np.savez('tmp_res_AI_K{}_e{}'.format(K, args.difficulty), **regret_rate)
+            cum_regret = np.array(results[0]).astype(np.float32)
+            cum_epst_regret = np.array(results[1]).astype(np.float32)
+            regret_all[label] = {'regret': cum_regret, 'epistemic': cum_epst_regret}
+        np.savez('tmp_res_AI_K{}_e{}'.format(K, args.difficulty), **regret_all)
     merge_files(args)
 
 if __name__=="__main__":
