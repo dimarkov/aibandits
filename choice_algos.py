@@ -52,8 +52,10 @@ def bucb_selection(t, beliefs, rng_key):
     
     perc = 1. - 1./(1. + t)
     Q = betaincinv(alpha_t, beta_t, perc)
+
+    lQ = jnp.log(Q)
     
-    return Q.argmax(-1)
+    return random.categorical(rng_key, 1e3*(lQ - lQ.mean(-1, keepdims=True)))
     
 def G(alpha_t, beta_t, alpha):
     nu_t = alpha_t + beta_t
@@ -75,7 +77,7 @@ def efe_selection(t, beliefs, rng_key, gamma=10, lam=1.):
     
     G_a = G(alpha_t, beta_t, alpha)
     
-    choices = random.categorical(rng_key, - gamma * G_a) # sample choices
+    choices = random.categorical(rng_key, - gamma * (G_a - Ga.mean(-1, keepdims=True))) # sample choices
     return choices
 
 def S(alpha_t, beta_t, lam):
