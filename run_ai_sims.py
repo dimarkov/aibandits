@@ -50,7 +50,7 @@ def main(args):
     gammas = jnp.arange(1., 21., 1.)
     lambdas = jnp.arange(.0, 4., .2)
     vals = jnp.array(list(itertools.product(gammas, lambdas)))
-    
+
     mean_reg = defaultdict(lambda: [])
     for K in Ks:
         for func, label in zip([efe_selection, sup_selection, app_selection], ['EFE_K{}'.format(K), 'SUP_K{}'.format(K), 'APP_K{}'.format(K)]):
