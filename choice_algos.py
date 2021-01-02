@@ -12,9 +12,7 @@ def thompson_selection(t, beliefs, rng_key):
     
     thetas = random.beta(rng_key, alpha_t, beta_t)
     
-    choices = thetas.argmax(-1) # select choices with maximal outcome probability
-    
-    return choices
+    return random.categorical(rng_key, 1e3 * (2 * thetas - 1))
 
 def ots_selection(t, beliefs, rng_key):
     #Optimistic thompson sampling
@@ -25,9 +23,9 @@ def ots_selection(t, beliefs, rng_key):
     
     thetas = random.beta(rng_key, alpha_t, beta_t)
     
-    choices = jnp.where(thetas > mu_t, thetas, mu_t).argmax(-1) # select choices with maximal outcome probability
+    thetas = jnp.where(thetas > mu_t, thetas, mu_t) # keep values larger than mean
     
-    return choices
+    return random.categorical(rng_key, 1e3 * (2 * thetas - 1))
 
 def ucb_selection(t, beliefs, rng_key):
     # classical ucb algorithm
@@ -38,11 +36,13 @@ def ucb_selection(t, beliefs, rng_key):
     mu_t = alpha_t/nu_t
     
     N, K = beliefs.shape[:-1]
+
+    V = mu_t + jnp.sqrt(2 * jnp.log(1 + t)/(nu_t-2 + 1e-6))
         
-    choices1 = (mu_t + jnp.sqrt(2 * jnp.log(1 + t)/(nu_t-2 + 1e-6))).argmax(-1)
-    choices2 = t * np.ones(N, dtype=np.int32)
+    choices1 = random.categorical(rng_key, 1e3 * (V - V.mean(-1, keepdims=True)))
+    choices2 = t * jnp.ones(N, dtype=jnp.int32)
     
-    return np.where(t >= K, choices1, choices2)
+    return jnp.where(t >= K, choices1, choices2)
 
 def bucb_selection(t, beliefs, rng_key):
     # bayesian ucb algorithm 
@@ -53,9 +53,7 @@ def bucb_selection(t, beliefs, rng_key):
     perc = 1. - 1./(1. + t)
     Q = betaincinv(alpha_t, beta_t, perc)
 
-    lQ = jnp.log(Q)
-    
-    return random.categorical(rng_key, 1e3*(lQ - lQ.mean(-1, keepdims=True)))
+    return random.categorical(rng_key, 1e3 * (2 * Q - 1))
     
 def G(alpha_t, beta_t, alpha):
     nu_t = alpha_t + beta_t
@@ -77,7 +75,7 @@ def efe_selection(t, beliefs, rng_key, gamma=10, lam=1.):
     
     G_a = G(alpha_t, beta_t, alpha)
     
-    choices = random.categorical(rng_key, - gamma * (G_a - Ga.mean(-1, keepdims=True))) # sample choices
+    choices = random.categorical(rng_key, - gamma * (G_a - G_a.mean(-1, keepdims=True))) # sample choices
     return choices
 
 def S(alpha_t, beta_t, lam):
@@ -98,7 +96,7 @@ def sup_selection(t, beliefs, rng_key, gamma=10., lam=1.):
     
     S_a = S(alpha_t, beta_t, lam) 
     
-    choices = random.categorical(rng_key, - gamma * S_a) # sample choices
+    choices = random.categorical(rng_key, - gamma * (S_a - S_a.mean(-1, keepdims=True))) # sample choices
     return choices
 
 def app_selection(t, beliefs, rng_key, gamma=10., lam=1.):
@@ -111,5 +109,5 @@ def app_selection(t, beliefs, rng_key, gamma=10., lam=1.):
     
     S_a = - lam * (2 * mu_t - 1) - 1/(2 * nu_t)
     
-    choices = random.categorical(rng_key, - gamma * S_a) # sample choices
+    choices = random.categorical(rng_key, - gamma * (S_a - S_a.mean(-1, keepdims=True))) # sample choices
     return choices

@@ -4,7 +4,7 @@ import jax.numpy as jnp
 from jax import random
 from jax.scipy.special import logit, expit
 
-def generative_process_swtch(t, choices, states, rng_key, log_pj_j):
+def generative_process_swtch(t, choices, states, rng_key, log_pj_j, **kwargs):
     probs, changes = states
 
     N = len(choices)
@@ -23,7 +23,7 @@ def generative_process_swtch(t, choices, states, rng_key, log_pj_j):
 
     return outcomes, [new_probs, new_change]
 
-def generative_process_drift(t, choices, states, rng_key, sigma=.01):
+def generative_process_drift(t, choices, states, rng_key, sigma=.01, **kwargs):
     probs, _ = states
     N = len(choices)
     K = len(probs)
