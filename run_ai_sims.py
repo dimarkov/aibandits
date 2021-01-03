@@ -18,7 +18,7 @@ log_pj_j = jnp.log(jnp.array([[1 - rho, rho], [1., 0.]]))
 process = lambda *args: generative_process_swtch(*args, log_pj_j)
 
 # simulator for POMDP
-def simulator(process, learning, action_selection, N=100, T=1000, K=10, seed=0, eps=.25, save_every=100):
+def simulator(process, learning, action_selection, N=100, T=1000, K=10, eps=.25, save_every=100):
     def loop_fn(t, carry):
         rng_key, states, prior, cum_reg, cum_epst_reg = carry
 
@@ -30,7 +30,6 @@ def simulator(process, learning, action_selection, N=100, T=1000, K=10, seed=0, 
         posterior = learning(outcomes, choices, prior)
 
         sel = jnp.arange(N)
-        sel_probs = probs[choices]
 
         alphas = prior[sel, choices, 0]
         betas = prior[sel, choices, 1]
@@ -38,16 +37,18 @@ def simulator(process, learning, action_selection, N=100, T=1000, K=10, seed=0, 
         mu = alphas/nu
 
         nu_min = jnp.min(prior[..., 0] + prior[..., 1], -1)
-        cum_reg += eps + .5 - sel_probs
+        cum_reg += eps * ~(choices == 0)
 
         cum_epst_reg += (1/nu_min - 1/nu)/2
 
         return (rng_key, states, posterior, cum_reg, cum_epst_reg)
 
     def sim_fn(carry, t):
-        res = lax.fori_loop(t*save_every, (t+1)*save_every, loop_fn, (carry))
-        _, _, _, cum_reg, cum_epst_reg = carry
+        res = lax.fori_loop(t*save_every, (t+1)*save_every, loop_fn, carry)
+        _, _, _, cum_reg, cum_epst_reg = res
         return res, (cum_reg, cum_epst_reg)
+
+    seed = 0
 
     rng_key = random.PRNGKey(seed)
     probs = jnp.concatenate([jnp.array([eps + .5]), jnp.ones(K-1)/2.])
@@ -73,12 +74,11 @@ def merge_files(args):
 def main(args):
     N = args.num_runs
     T = args.num_trials
-    times = np.arange(1, T + 1, 10)[:, None]
     Ks = args.num_arms
     eps = args.difficulty/100.
 
     gammas = jnp.ones(1) * 1000.
-    lambdas = jnp.arange(.0, 1., .025)
+    lambdas = jnp.arange(.0, 1.5, .015)
     vals = jnp.array(list(itertools.product(gammas, lambdas)))
 
     for K in Ks:
