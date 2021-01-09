@@ -32,12 +32,13 @@ def ucb_selection(t, beliefs, rng_key):
     alpha_t = beliefs[..., 0]
     beta_t = beliefs[..., 1]
     
-    nu_t = alpha_t + beta_t
-    mu_t = alpha_t/nu_t
+    n_t = alpha_t + beta_t - 2 + 1e-6
+    mu_t = (alpha_t - 1)/n_t
     
     N, K = beliefs.shape[:-1]
 
-    V = mu_t + jnp.sqrt(2 * jnp.log(1 + t)/(nu_t-2 + 1e-6))
+    lnt = jnp.log(t + 1)
+    V = mu_t + lnt/(n_t) + jnp.sqrt(mu_t * lnt/n_t)
         
     choices1 = random.categorical(rng_key, 1e3 * (V - V.mean(-1, keepdims=True)))
     choices2 = t * jnp.ones(N, dtype=jnp.int32)
@@ -106,6 +107,21 @@ def app_selection(t, beliefs, rng_key, gamma=10., lam=1.):
     
     nu_t = alpha_t + beta_t
     mu_t = alpha_t/nu_t
+    
+    S_a = - lam * (2 * mu_t - 1) - 1/(2 * nu_t)
+    
+    choices = random.categorical(rng_key, - gamma * (S_a - S_a.mean(-1, keepdims=True))) # sample choices
+    return choices
+
+def app_dyn_selection(t, beliefs, rng_key, gamma=10., lam=1.):
+    # expected surprisal based action selection
+    alpha_t = beliefs[..., 0]
+    beta_t = beliefs[..., 1]
+    
+    nu_t = alpha_t + beta_t
+    mu_t = alpha_t/nu_t
+
+    lam_dyn = lam/jnp.log(t + 1 + 1e-6)
     
     S_a = - lam * (2 * mu_t - 1) - 1/(2 * nu_t)
     
