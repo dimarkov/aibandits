@@ -81,15 +81,15 @@ def main(args):
     lambdas = jnp.arange(.0, 1.5, .015)
     vals = jnp.array(list(itertools.product(gammas, lambdas)))
 
-    for K in Ks:
-        regret_all = defaultdict()
-        for func, label in zip([efe_selection, sup_selection, app_selection], ['EFE_K{}'.format(K), 'SUP_K{}'.format(K), 'APP_K{}'.format(K)]):
-            sim = lambda g, l: simulator(process, learning, lambda *args: func(*args, gamma=g, lam=l), N=N, T=T, K=K, eps=eps)
-            results = vmap(sim)(vals[:, 0], vals[:, 1])
-            cum_regret = np.array(results[0]).astype(np.float32)
-            cum_epst_regret = np.array(results[1]).astype(np.float32)
-            regret_all[label] = {'regret': cum_regret, 'epistemic': cum_epst_regret}
-        np.savez('tmp_res_AI_K{}_e{}'.format(K, args.difficulty), **regret_all)
+#    for K in Ks:
+#        regret_all = defaultdict()
+#        for func, label in zip([efe_selection, sup_selection, app_selection], ['EFE_K{}'.format(K), 'SUP_K{}'.format(K), 'APP_K{}'.format(K)]):
+#            sim = lambda g, l: simulator(process, learning, lambda *args: func(*args, gamma=g, lam=l), N=N, T=T, K=K, eps=eps)
+#            results = vmap(sim)(vals[:, 0], vals[:, 1])
+#            cum_regret = np.array(results[0]).astype(np.float32)
+#            cum_epst_regret = np.array(results[1]).astype(np.float32)
+#            regret_all[label] = {'regret': cum_regret, 'epistemic': cum_epst_regret}
+#        np.savez('tmp_res_AI_K{}_e{}'.format(K, args.difficulty), **regret_all)
     merge_files(args)
 
 if __name__=="__main__":
