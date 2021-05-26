@@ -130,3 +130,5 @@ dmypy.json
 
 # generic output files
 *.out
+
+.vscode/
