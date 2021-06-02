@@ -7,7 +7,7 @@ import os
 import glob
 
 from collections import defaultdict
-from tqdm import trange
+from tqdm import trange, tqdm
 from jax import random, lax, vmap
 
 from bandits import efe_selection, app_selection, ai_sampling_selection, thompson_selection, ots_selection, ucb_selection, bucb_selection
@@ -47,7 +47,7 @@ def main(args):
 
     seed = PRNGKey(10396145)
 
-    for K in Ks:
+    for K in tqdm(Ks):
         regret_all = defaultdict()
         for func, label in zip([efe_selection, app_selection, ai_sampling_selection], ['EFE_K{}'.format(K), 'APP_K{}'.format(K), 'SMP_K{}'.format(K),]):
             seed, _seed = random.split(seed)
