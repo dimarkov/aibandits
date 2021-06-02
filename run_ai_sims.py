@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import numpy as np
 import itertools
 import argparse
-import os 
+import os
 import glob
 
 from collections import defaultdict
