@@ -1,7 +1,7 @@
 # methods for generative processes
 
 import jax.numpy as jnp
-from jax import random, lax
+from jax import lax, random
 
 __all__ = [
     'simulator',
@@ -49,11 +49,10 @@ def simulator(process, learning, action_selection, N=100, seed=0, steps=45, K=10
         
         return res, res[-1]
     
-    rng_key = random.PRNGKey(seed)
     probs = jnp.concatenate([jnp.array([eps + .5]), jnp.ones(K-1)/2.])
     states = [probs, jnp.zeros(1, dtype=jnp.int32)]
     prior = jnp.ones((N, K, 2))
     
-    _, results = lax.scan(sim_fn, (rng_key, states, prior, jnp.zeros(N)), jnp.arange(steps))
+    _, results = lax.scan(sim_fn, (random.PRNGKey(seed), states, prior, jnp.zeros(N)), jnp.arange(steps))
     
     return results

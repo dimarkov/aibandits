@@ -108,8 +108,7 @@ def ai_sampling_selection(t, beliefs, rng_key, gamma=1e5, lam=1.):
     nu_t = alpha_t + beta_t
     mu_t = alpha_t/nu_t
 
-    rng_key1, rng_key2 = random.split(rng_key)
-    thetas = random.beta(rng_key1, alpha_t, beta_t)
+    thetas = random.beta(rng_key, alpha_t, beta_t)
 
     KL_a = - lam * (2 * thetas - 1) + thetas * jnp.log(mu_t) + (1 - thetas) * jnp.log(1 - mu_t)
     H_a = - thetas * jnp.log(thetas) - (1 - thetas) * jnp.log(1 - thetas)
