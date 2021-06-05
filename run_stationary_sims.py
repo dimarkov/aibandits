@@ -45,7 +45,7 @@ class Sim:
         elif selection == 'UCB':
             results = simulator(process, learning, ucb_selection, N=self.N, steps=self.steps, K=K, eps=self.eps, seed=seed)
         elif selection == 'BUCB':
-            results = simulator(process, learning, ucb_selection, N=self.N, steps=self.steps, K=K, eps=self.eps, seed=seed)
+            results = simulator(process, learning, bucb_selection, N=self.N, steps=self.steps, K=K, eps=self.eps, seed=seed)
         elif selection == 'EFE':
             sim = lambda l: simulator(process, learning, lambda *args: efe_selection(*args, lam=l), N=self.N, steps=self.steps, K=K, eps=self.eps, seed=seed)
             results = vmap(sim)(self.lambdas)

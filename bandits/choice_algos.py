@@ -101,7 +101,7 @@ def app_selection(t, beliefs, rng_key, gamma=1e5, lam=1.):
     choices = random.categorical(rng_key, - gamma * S_a) # sample choices
     return choices
 
-def ai_sampling_selection(t, beliefs, rng_key, gamma=1e5, lam=1.):
+def ai_sampling_selection(t, beliefs, rng_key, lam=1.):
     alpha_t = beliefs[..., 0]
     beta_t = beliefs[..., 1]
 
