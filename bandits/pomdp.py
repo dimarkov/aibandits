@@ -8,7 +8,7 @@ __all__ = [
     'generate_checkpoints'
 ]
 
-def generate_checkpoints(save_every, steps):
+def generate_checkpoints(steps, save_every=100):
     checks = [0, save_every]
     for t in range(steps):
         checks.append(save_every)
@@ -18,7 +18,7 @@ def generate_checkpoints(save_every, steps):
 
 def simulator(process, learning, action_selection, N=100, seed=0, steps=45, K=10, eps=.25):
     # save checkpoints in logarithmic scale
-    checks = generate_checkpoints(100, steps)
+    checks = generate_checkpoints(steps)
 
     def loop_fn(t, carry):
         rng_key, states, prior, cum_reg = carry
@@ -53,6 +53,6 @@ def simulator(process, learning, action_selection, N=100, seed=0, steps=45, K=10
     states = [probs, jnp.zeros(1, dtype=jnp.int32)]
     prior = jnp.ones((N, K, 2))
     
-    _, results = lax.scan(sim_fn, (random.PRNGKey(seed), states, prior, jnp.zeros(N)), jnp.arange(steps))
+    _, results = lax.scan(sim_fn, (random.PRNGKey(seed), states, prior, jnp.zeros(N)), jnp.arange(steps+1))
     
     return results
