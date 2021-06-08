@@ -34,7 +34,7 @@ def ots_selection(t, beliefs, rng_key):
     
     thetas = random.beta(rng_key, alpha_t, beta_t)
     
-    thetas = jnp.where(thetas > mu_t, thetas, mu_t) # keep values larger than mean
+    thetas = jnp.clip(thetas, a_min=mu_t) # keep values larger than mean
     
     return jnp.argmax(thetas,  -1)
 

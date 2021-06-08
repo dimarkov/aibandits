@@ -53,7 +53,8 @@ class Sim:
             sim = lambda l: simulator(process, learning, lambda *args: app_selection(*args, lam=l), N=self.N, steps=self.steps, K=K, eps=self.eps, seed=seed)
             results = vmap(sim)(self.lambdas)
         elif selection == 'SMP':
-            results = simulator(process, learning, ai_sampling_selection, N=self.N, steps=self.steps, K=K, eps=self.eps, seed=seed)
+            sim = lambda l: simulator(process, learning, lambda *args: ai_sampling_selection(*args, lam=l), N=self.N, steps=self.steps, K=K, eps=self.eps, seed=seed)
+            results = vmap(sim)(self.lambdas)
         return results, selection, K
 
 
@@ -71,7 +72,7 @@ def main(args):
     regret_all = defaultdict(lambda: {})
     nargs = []
     for K in Ks:
-        for name in ['TS', 'OTS', 'SMP', 'UCB', 'BUCB', 'EFE', 'APP']:
+        for name in args.algos:
             seed, _seed = random.split(seed)
             nargs.append((name, K, _seed[0]))
     
@@ -82,17 +83,20 @@ def main(args):
             for res, label, K in pool.starmap(job, nargs):
                 print(label + '_' + str(K), time() - start)
                 regret_all[label][K] = np.array(res).astype(np.float32)
-        
-    np.savez('data/stationary_Ks_e{}'.format(args.difficulty), **regret_all)
+    
+    if 'SMP' in args.algos:
+        np.savez('data/stationary_Ks_e{}_T{}_SMPAI'.format(args.difficulty, args.trial_power), **regret_all)
+    else:
+        np.savez('data/stationary_Ks_e{}_T{}'.format(args.difficulty, args.trial_power), **regret_all)
     
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description="All bandit algos in classical multi-armed bandits")
-    parser.add_argument("-p", "--trial-power", nargs="?", default=3, type=int) # number of trials T = 10^p
+    parser.add_argument("-p", "--trial-power", nargs='?', default=3, type=int) # number of trials T = 10^p
     parser.add_argument("-n", "--num-runs", nargs='?', default=10, type=int)
     parser.add_argument("-k", "--num-arms", nargs='+', default=5, type=int)
     parser.add_argument("-d", "--difficulty", nargs='?', default=25, type=int)
-    parser.add_argument('--device', nargs=1, default='gpu', type=str)
+    parser.add_argument("--algos", nargs='+', default=['TS', 'OTS', 'UCB', 'BUCB', 'EFE', 'APP'], type=str)
+    parser.add_argument("--device", nargs=1, default='gpu', type=str)
 
     args = parser.parse_args()
-
     main(args)
