@@ -118,18 +118,3 @@ def app_selection(t, beliefs, rng_key, gamma=1e5, lam=1.):
     
     choices = random.categorical(rng_key, - gamma * S_a) # sample choices
     return choices
-
-def sai_selection(t, beliefs, rng_key, lam=1., rho=0.):
-    alpha_t = beliefs[..., 0]
-    beta_t = beliefs[..., 1]
-
-    mu_t = (1 - rho) * alpha_t/(alpha_t + beta_t) + rho/2
-
-    thetas = lax.cond(rho > 0., sample_switching, sample_stationary, (rng_key, alpha_t, beta_t, rho)) 
-
-    KL_a = - lam * (2 * thetas - 1) + thetas * jnp.log(mu_t) + (1 - thetas) * jnp.log(1 - mu_t)
-    H_a = - thetas * jnp.log(thetas) - (1 - thetas) * jnp.log(1 - thetas)
-
-    G_a = KL_a + H_a
-
-    return jnp.argmin(G_a, -1)
