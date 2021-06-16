@@ -1,7 +1,7 @@
 # implementation of decision algorithms
 import jax.numpy as jnp
 from jax.scipy.special import digamma
-from jax import random, lax, jit
+from jax import random, lax
 from .utils import betaincinv
 
 __all__ = [
@@ -11,8 +11,7 @@ __all__ = [
     'ucb_selection',
     'bucb_selection',
     'efe_selection',
-    'app_selection',
-    'sai_selection'
+    'app_selection'
 ]
 
 def random_choices(t, beliefs, rng_key, **kwargs):
