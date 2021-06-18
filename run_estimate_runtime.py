@@ -4,8 +4,7 @@ import timeit
 
 import jax
 import jax.numpy as jnp
-from jax import random, jit
-from multiprocessing import get_context
+from jax import random, jit, lax
 
 from numpy.core.fromnumeric import shape
 
@@ -25,27 +24,39 @@ selection = {
     'A-AI': jit(app_selection),
 }
 
+learning = jit(learning_switching)
+
 def main(args):
 
-    def run(func, *args):
-        res = func(*args)
-        res[0].block_until_ready()
+    def run(func, outcomes, beliefs):
+        
+        def scan_fun(carry, t):
+
+            prior, rng_key = carry
+
+            choices = func(t, prior, rng_key)
+
+            posterior = learning(outcomes, choices, prior)
+
+            return (posterior, rng_key), None
+
+        rng_key = random.PRNGKey(0)
+
+        last, _ = lax.scan(scan_fun, (beliefs, rng_key), jnp.arange(10000))
+
+        last[0].block_until_ready()
 
     N = args.num_runs
     Ks = args.num_arms
+    number = 10
     for K in Ks:
-        beliefs = jnp.ones((N, K, 2))
-        t = 100
-        print("\nEstimate runtime of action selection algo ...")
-        for name in args.algos:
-            run(selection[name], t, beliefs, random.PRNGKey(0))
-            print(name, "K={}".format(K), timeit.timeit(lambda: run(selection[name], t, beliefs, random.PRNGKey(0)), number=1000))
-        
-        print("\nEstimate runtime of the learning algo ...")
         outcomes = jnp.zeros((N, K))
-        choices = jnp.zeros(N, dtype=jnp.int32)
-        print('rho=0', "K={}".format(K), timeit.timeit(lambda: jit(learning_switching)(outcomes, choices, beliefs), number=100))
-        print('rho>0', "K={}".format(K), timeit.timeit(lambda: jit(learning_switching)(outcomes, choices, beliefs, rho=.01), number=100))
+        beliefs = jnp.ones((N, K, 2))
+
+        print("\nEstimate runtime of bandit algorithms for K={}".format(K))
+        for name in args.algos:
+            run(selection[name], outcomes, beliefs)
+            print(name, "K={}".format(K), timeit.timeit(lambda: run(selection[name], outcomes, beliefs), number=number)/(number*10))
 
         
 
