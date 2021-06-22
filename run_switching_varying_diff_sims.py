@@ -12,7 +12,7 @@ from multiprocessing import get_context
 
 # load functions
 from bandits import learning_switching
-from bandits import ots_selection, bucb_selection, efe_selection, app_selection, sai_selection, random_choices
+from bandits import ots_selection, bucb_selection, efe_selection, app_selection, random_choices
 from bandits import sim_varying_difficulty as simulator
 
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"]="false"
@@ -54,6 +54,7 @@ class Sim:
             selection = Selection(ots_selection, rho)
             results = simulator(learning, selection, **self.params)
         elif name == 'B-UCB':
+            jax.config.update('jax_platform_name', 'cpu')  # for some strange reason this speeds up mpi computations.
             selection = Selection(bucb_selection, rho)
             results = simulator(learning, selection, **self.params)
         elif name == 'G-AI':
@@ -61,9 +62,6 @@ class Sim:
             results = vmap(sim)(self.lambdas)
         elif name == 'A-AI':
             sim = lambda l: simulator(learning, lambda *args: app_selection(*args, lam=l), **self.params)
-            results = vmap(sim)(self.lambdas)
-        elif name == 'S-AI':
-            sim = lambda l: simulator(learning, lambda *args: sai_selection(*args, lam=l, rho=rho), **self.params)
             results = vmap(sim)(self.lambdas)
         elif name == 'RC':
             selection = Selection(random_choices, rho)
@@ -82,27 +80,19 @@ def main(args):
     regret_all = defaultdict(lambda: {})
     for name in tqdm(args.algos):
         nargs = []
-        for rho in [.01, .02, .04]:
-            R = int(100 * rho)
+        for rho in [0.005, .01, .02, .04]:
+            R = int(1000 * rho)
             regret_all[name][R] = []
             for K in Ks:
                 rng_key, _rng_key = random.split(rng_key)
                 nargs.append((name, rho, K, _rng_key[0]))
 
         job = Sim(N, T)
-        if name in ['B-UCB']:
-            # algos which are slow in multiprocessing mode
-            for narg in nargs:
-                res, name, params = job(*narg)
-                R = int(100 * params['rho'])
+        with get_context("spawn").Pool() as pool:
+            for res, name, params in pool.starmap(job, nargs):
+                R = int(1000 * params['rho'])
                 K = params['K']
                 regret_all[name][R].append((K, np.array(res).astype(np.float32)))
-        else:
-            with get_context("spawn").Pool() as pool:
-                for res, name, params in pool.starmap(job, nargs):
-                    R = int(100 * params['rho'])
-                    K = params['K']
-                    regret_all[name][R].append((K, np.array(res).astype(np.float32)))
             
         np.savez('data/tmp_switching_varying_T{}_{}'.format(T, name), regret_all[name])
     np.savez('data/switching_varying_T{}'.format(T), **regret_all)
@@ -113,10 +103,10 @@ def main(args):
         
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description="All bandit algos in switching multi-armed bandits")
-    parser.add_argument("-t", "--num-trials", nargs='?', default=1000, type=int)
-    parser.add_argument("-n", "--num-runs", nargs='?', default=10, type=int)
+    parser.add_argument("-t", "--num-trials", nargs='?', default=10000, type=int)
+    parser.add_argument("-n", "--num-runs", nargs='?', default=1000, type=int)
     parser.add_argument("-k", "--num-arms", nargs='+', default=5, type=int)
-    parser.add_argument("--algos", nargs='+', default=['RC', 'O-TS', 'B-UCB', 'G-AI', 'A-AI', 'S-AI'], type=str)
+    parser.add_argument("--algos", nargs='+', default=['RC', 'O-TS', 'B-UCB', 'G-AI', 'A-AI'], type=str)
     parser.add_argument("--device", nargs='?', default='gpu', type=str)
 
     args = parser.parse_args()
