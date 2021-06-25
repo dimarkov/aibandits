@@ -142,3 +142,6 @@ notebooks/stationary/*.png
 notebooks/switching/*.pdf
 notebooks/switching/*.svg
 notebooks/switching/*.png
+
+# bash files
+*.sh
