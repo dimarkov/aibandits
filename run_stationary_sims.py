@@ -12,7 +12,7 @@ from multiprocessing import get_context
 
 # load functions
 from bandits import learning_switching
-from bandits import thompson_selection, ucb_selection, ots_selection, bucb_selection, efe_selection, app_selection, sai_selection
+from bandits import thompson_selection, ucb_selection, ots_selection, bucb_selection, efe_selection, app_selection
 from bandits import sim_fixed_difficulty, sim_varying_difficulty
 
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"]="false"
@@ -23,8 +23,7 @@ selection = {
     'O-TS': ots_selection,
     'B-UCB': bucb_selection,
     'G-AI': efe_selection,
-    'A-AI': app_selection,
-    'S-AI': sai_selection
+    'A-AI': app_selection
 }
 
 
@@ -63,7 +62,7 @@ class Sim:
         elif name == 'B-UCB':
             jax.config.update('jax_platform_name', 'cpu')  # for some strange reason this speeds up mpi computations.
             results = self.simulator(learning, bucb_selection, **self.params)
-        elif name in ['G-AI', 'A-AI', 'S-AI']:
+        elif name in ['G-AI', 'A-AI']:
             sim = lambda l: self.simulator(learning, lambda *args: selection[name](*args, lam=l), **self.params)
             results = vmap(sim)(self.lambdas)
  
