@@ -116,6 +116,7 @@ dependencies:
   - testpath=0.5.0=pyhd3eb1b0_0
   - tk=8.6.10=hbc83047_0
   - tornado=6.1=py39h27cfd23_0
+  - tqdm=4.61.2=pyhd3eb1b0_1
   - traitlets=5.0.5=pyhd3eb1b0_0
   - tzdata=2021a=h52ac0ba_0
   - wcwidth=0.2.5=py_0
