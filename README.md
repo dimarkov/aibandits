@@ -17,7 +17,8 @@ conda activate bandits
 ```
 and follow the official instructions for installing [jax](https://github.com/google/jax).
 If you have GPU availible we recomend installing the jax version with GPU support, as this 
-would speed up the execution of the code by an order of the magnitute.
+would speed up the execution of the code by an order of the magnitute. The last version 
+which was used and tested on the provided code is jax 1.68 (with support for cuda 11.1).
 
 ## Usage
 The notebooks folder contains examples of code usage and scripts to reproduce the figures 
