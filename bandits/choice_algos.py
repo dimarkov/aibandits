@@ -81,7 +81,7 @@ def bucb_selection(t, beliefs, rng_key, rho=0.):
     perc = 1. - 1./(1 + t)
     Q = betaincinv(bar_alpha, bar_beta, perc)
 
-    return random.categorical(rng_key, 1e5 * (2 * Q - 1))  # sample_choices
+    return random.categorical(rng_key, 1e3 * (2 * Q - 1))  # sample_choices
 
 def G(alpha_t, beta_t, lam, rho):
     
@@ -89,13 +89,13 @@ def G(alpha_t, beta_t, lam, rho):
     mu_t = alpha_t / nu_t
     tilde_mu = mu_t + rho * (.5 - mu_t)
     
-    KL_a = - 2 * lam * (1 - rho) * mu_t + tilde_mu * jnp.log(tilde_mu) + (1 - tilde_mu) * jnp.log(1 - tilde_mu) 
+    KL_a = - lam * (2 * (1 - rho) * mu_t + rho - 1) + tilde_mu * jnp.log(tilde_mu) + (1 - tilde_mu) * jnp.log(1 - tilde_mu) 
     
     H_a = - mu_t * digamma(alpha_t + 1) - (1-mu_t) * digamma(beta_t + 1) + digamma(nu_t + 1)
     
     return KL_a + (1 - rho) * H_a
 
-def efe_selection(t, beliefs, rng_key, gamma=1e5, lam=1., rho=0.):
+def efe_selection(t, beliefs, rng_key, gamma=1e3, lam=1., rho=0.):
     # expected surprisal based action selection
     alpha_t = beliefs[..., 0]
     beta_t = beliefs[..., 1]
@@ -105,7 +105,7 @@ def efe_selection(t, beliefs, rng_key, gamma=1e5, lam=1., rho=0.):
     choices = random.categorical(rng_key, - gamma * S_a) # sample choices
     return choices
 
-def app_selection(t, beliefs, rng_key, gamma=1e5, lam=1.):
+def app_selection(t, beliefs, rng_key, gamma=1e3, lam=1.):
     # expected surprisal based action selection
     alpha_t = beliefs[..., 0]
     beta_t = beliefs[..., 1]
