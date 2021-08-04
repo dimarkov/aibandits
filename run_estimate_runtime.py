@@ -6,9 +6,6 @@ import jax
 import jax.numpy as jnp
 from jax import random, jit, lax
 
-from numpy.core.fromnumeric import shape
-
-
 # load functions
 from bandits import learning_switching
 from bandits import thompson_selection, ucb_selection, ots_selection, bucb_selection, efe_selection, app_selection
@@ -27,6 +24,8 @@ selection = {
 learning = jit(learning_switching)
 
 def main(args):
+
+    jax.config.update('jax_platform_name', args.device)
 
     def run(func, outcomes, beliefs):
         
@@ -47,8 +46,10 @@ def main(args):
         last[0].block_until_ready()
 
     N = args.num_runs
+    print("Estimate runtime for N={} parallel runs\n".format(N))
+
     Ks = args.num_arms
-    number = 10
+    number = 10  # number of repetitions of the timing loop 
     for K in Ks:
         outcomes = jnp.zeros((N, K))
         beliefs = jnp.ones((N, K, 2))
@@ -62,10 +63,8 @@ def main(args):
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description="Stationary multi-armed bandits with fixed difficulty")
-    parser.add_argument("-p", "--trial-power", nargs='?', default=3, type=int) # number of trials T=10^p
-    parser.add_argument("-n", "--num-runs", nargs='?', default=10, type=int)
-    parser.add_argument("-k", "--num-arms", nargs='+', default=5, type=int)
-    parser.add_argument("-d", "--difficulty", nargs='?', default='fixed', type=str)
+    parser.add_argument("-n", "--num-runs", nargs='?', default=1000, type=int)
+    parser.add_argument("-k", "--num-arms", nargs='+', default=[10, 20, 40, 80], type=int)
     parser.add_argument("--algos", nargs='+', default=['TS', 'O-TS', 'UCB', 'B-UCB', 'G-AI', 'A-AI'], type=str)
     parser.add_argument("--device", nargs='?', default='gpu', type=str)
 
