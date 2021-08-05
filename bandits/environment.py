@@ -58,16 +58,15 @@ def generative_process_swtch2(t, choices, states, rng_key, logits, **kwargs):
 
 def generative_process_drift(t, choices, states, rng_key, sigma=.01, **kwargs):
     """Drifting generative process where probabilities associated with each 
-    arm follow independently a random walk in the logit space.
+    arm follows independently a random walk in the logit space.
     """
     probs, _ = states
-    N = len(choices)
-    K = len(probs)
+    N, K = probs.shape
     
     rng_key, _rng_key = random.split(rng_key)
-    x = logit(probs) + jnp.sqrt(sigma) * random.normal(_rng_key, shape=(K,))
+    x = logit(probs) + jnp.sqrt(sigma) * random.normal(_rng_key, shape=(N, K))
     
     rng_key, _rng_key = random.split(rng_key)
-    outcomes = random.bernoulli(_rng_key, probs, shape=(N, K))
+    outcomes = random.bernoulli(_rng_key, probs)
     
-    return outcomes, [expit(x), jnp.zeros(K, dtype=jnp.int32)]
+    return outcomes, [expit(x), jnp.zeros(N, dtype=jnp.int32)]
