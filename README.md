@@ -49,6 +49,16 @@ Running the notebooks, stationary_bandits_plotting.ipynb and switching_bandits_c
 will recreate the figures from the paper.  
 
 ## Citing
-We will update this part with correct citation as soon as the paper is published. In the 
-current absence of peer-reviewed article please cite the arXiv preprint if you decide to use 
-the code in your work.
+To cite our work or the repository please use the following bibtex entry:
+```
+@article{markovic,
+title = {An empirical evaluation of active inference in multi-armed bandits},
+journal = {Neural Networks},
+year = {2021},
+issn = {0893-6080},
+doi = {https://doi.org/10.1016/j.neunet.2021.08.018},
+url = {https://www.sciencedirect.com/science/article/pii/S0893608021003233},
+author = {Dimitrije Marković and Hrvoje Stojić and Sarah Schwöbel and Stefan J. Kiebel},
+keywords = {Decision making, Bayesian inference, Multi-armed bandits, Active inference, Upper confidence bound, Thompson sampling}
+}
+```
